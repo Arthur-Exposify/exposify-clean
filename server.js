@@ -10,6 +10,11 @@ import puppeteer from "puppeteer";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const css = fs.readFileSync(
+path.join(__dirname, "public", "style.css"),
+"utf8"
+);
+
 const app = express();
 const port = 3000;
 
@@ -371,9 +376,13 @@ await page.setViewport({ width: 1280, height: 1800 });
 
 await page.setContent(
 `
-<html>
+<!DOCTYPE html>
+<html lang="de">
 <head>
-<link rel="stylesheet" href="https://exposify-clean.onrender.com/style.css">
+<meta charset="UTF-8">
+<style>
+${css}
+</style>
 </head>
 <body>
 ${html}

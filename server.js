@@ -363,7 +363,7 @@ return res.status(400).json({ success: false, message: "Kein HTML erhalten." });
 
 const browser = await puppeteer.launch({
 args: ["--no-sandbox", "--disable-setuid-sandbox"],
-headless: true
+headless: "new"
 });
 
 const page = await browser.newPage();

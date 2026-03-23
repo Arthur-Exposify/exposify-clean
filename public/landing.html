@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exposify</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="landing">
+
+<section class="hero">
+<div class="heroContent">
+
+<h1>Erstelle professionelle Immobilien-Exposés in nur wenigen Minuten</h1>
+
+<p class="heroSub">
+Exposify nimmt dir Layout, Seitenaufteilung und PDF-Erstellung ab.
+Du konzentrierst dich nur noch auf den Inhalt.
+</p>
+
+<div class="heroButtons">
+<button class="primaryBtn" onclick="goToEditor()">Kostenlos starten</button>
+<button class="secondaryBtn" onclick="scrollToSection()">So funktioniert’s</button>
+</div>
+
+<div class="heroTrust">
+<span>✓ Keine Designkenntnisse nötig</span>
+<span>✓ Automatische Seitenaufteilung</span>
+<span>✓ Sofort als PDF exportierbar</span>
+</div>
+
+</div>
+</section>
+
+<section class="landingHeroImage">
+<div class="imageWrapper">
+<img src="/assets/editor-preview.png" alt="Exposify Editor Vorschau">
+</div>
+
+<div class="heroCTA">
+<button class="primaryBtn big" onclick="goToEditor()">
+Kostenlos Exposé erstellen
+</button>
+<p class="ctaSub">Keine Anmeldung notwendig • In wenigen Minuten zum fertigen Exposé</p>
+</div>
+</section>
+
+<section class="features">
+
+<div class="feature">
+<h3>🚀 Schnell erstellt</h3>
+<p>Vom leeren Projekt zum fertigen Exposé in wenigen Minuten.</p>
+</div>
+
+<div class="feature">
+<h3>🎯 Flexibel bearbeitbar</h3>
+<p>Positioniere Bilder frei, passe Texte an und gestalte dein Layout intuitiv.</p>
+</div>
+
+<div class="feature">
+<h3>📄 Perfektes PDF</h3>
+<p>Automatische Seitenlogik sorgt für saubere, druckfertige Exposés.</p>
+</div>
+
+</section>
+
+<section class="howItWorks" id="how">
+
+<h2>So funktioniert Exposify</h2>
+
+<div class="steps">
+
+<div class="step">
+<div class="stepNumber">1</div>
+<h3>Daten eingeben</h3>
+<p>Objektdaten, Bilder und Maklerinfos hinzufügen.</p>
+</div>
+
+<div class="step">
+<div class="stepNumber">2</div>
+<h3>Exposé gestalten</h3>
+<p>Inhalte anpassen und dein Layout live bearbeiten.</p>
+</div>
+
+<div class="step">
+<div class="stepNumber">3</div>
+<h3>PDF exportieren</h3>
+<p>Fertiges Exposé mit einem Klick herunterladen.</p>
+</div>
+
+</div>
+</section>
+
+<section class="cta">
+
+<h2>Bereit für dein erstes professionelles Exposé?</h2>
+<p>Starte jetzt kostenlos und erstelle dein erstes Projekt in wenigen Minuten.</p>
+
+<button class="primaryBtn big" onclick="goToEditor()">Jetzt kostenlos starten</button>
+
+</section>
+
+</div>
+
+    <footer class="footer">
+        <a href="/impressum.html">Impressum</a>
+        <a href="/datenschutz.html">Datenschutz</a>
+    </footer>
+
+<script>
+
+    function scrollToSection() {
+        document.getElementById("how").scrollIntoView({behavior: "smooth"});
+    }
+
+    function goToEditor() {
+        window.location.href = "/";
+    }
+
+
+</script>
+
+</body>
+</html>

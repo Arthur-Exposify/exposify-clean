@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Projekt bearbeiten – Exposify</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="layout">
+
+<div class="sidebar">
+<div>
+<div class="logoWrap">
+<img src="/assets/logo.svg" alt="Exposify Logo">
+</div>
+
+<div class="sidebarTop">
+<button type="button" onclick="goNew()">Neues Projekt</button>
+<button type="button" onclick="goDashboard()">Meine Projekte</button>
+</div>
+</div>
+
+<div class="sidebarBottom">
+<button id="loginBtn" type="button" onclick="goLogin()">Anmelden</button>
+<button type="button" onclick="logout()">Logout</button>
+
+<div class="sidebarBottomLinks">
+<a href="/impressum.html">Impressum</a>
+<a href="/datenschutz.html">Datenschutz</a>
+</div>
+
+</div>
+</div>
+
+<div class="content">
+
+<div class="pageTitleRow">
+<h1>Projekt bearbeiten</h1>
+</div>
+
+<div class="editorStickyBar">
+<div class="editorActions">
+<button type="button" onclick="goDashboard()">Zurück zu Meine Projekte</button>
+<button id="saveBtn" type="button">Änderungen speichern</button>
+<input id="editorImageUpload" type="file" accept="image/*" multiple hidden>
+<span id="imageLimitHint" class="pageLimitHint">Noch 11 Bilder verfügbar</span>
+<span id="pageLimitHint" class="pageLimitHint">1 / 5 Seiten</span>
+</div>
+
+<div class="editorToolbar">
+
+<div class="toolbarRow toolbarRowTop">
+<div class="toolbarGroup">
+<button type="button" data-command="bold"><b>B</b></button>
+<button type="button" data-command="italic"><i>I</i></button>
+<button type="button" data-command="underline"><u>U</u></button>
+</div>
+
+<span class="toolbarDivider"></span>
+
+<div class="toolbarGroup">
+<button type="button" data-heading="h1">Titel</button>
+<button type="button" data-heading="h2">Abschnitt</button>
+<button type="button" data-heading="h3">Unterpunkt</button>
+</div>
+
+<span class="toolbarDivider"></span>
+
+<div class="toolbarGroup">
+<button type="button" data-command="insertUnorderedList">• Liste</button>
+<button type="button" data-command="insertOrderedList">1. Liste</button>
+<button type="button" id="insertDividerBtn">Linie</button>
+</div>
+
+<span class="toolbarDivider"></span>
+
+<div class="toolbarGroup">
+<button type="button" data-command="justifyLeft">Text links</button>
+<button type="button" data-command="justifyCenter">Text mitte</button>
+<button type="button" data-command="justifyRight">Text rechts</button>
+</div>
+</div>
+
+<div class="toolbarRowDivider"></div>
+
+<div class="toolbarRow toolbarRowBottom">
+<div class="toolbarGroup">
+<button type="button" id="decreaseIndentBtn">Einzug -</button>
+<button type="button" id="increaseIndentBtn">Einzug +</button>
+</div>
+
+<span class="toolbarDivider"></span>
+
+<div class="toolbarGroup">
+<button id="addPageBtn" type="button">+ Seite</button>
+<button id="removePageBtn" type="button">- Seite</button>
+<button id="addImageBtn" type="button">+ Bild</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="editorLayout">
+<div class="editorWorkspace">
+<div id="editorArea" class="editorCard">
+Projekt wird geladen...
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div id="saveToast" class="saveToast">Änderung gespeichert.</div>
+
+<div id="noticeModal" class="modalOverlay hidden">
+<div class="modalBox">
+<p id="noticeModalText">Hinweis</p>
+<button type="button" id="noticeModalOk">OK</button>
+</div>
+</div>
+
+<script>
+let currentProject = null;
+let saveToastTimeout = null;
+let selectedImage = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+let selectedDivider = null;
+let isUserLoggedIn = false;
+let pageFlowTimeout = null;
+
+const noticeModal = document.getElementById("noticeModal");
+const noticeModalText = document.getElementById("noticeModalText");
+const noticeModalOk = document.getElementById("noticeModalOk");
+
+function resetEditorState() {
+if (pageFlowTimeout) {
+clearTimeout(pageFlowTimeout);
+}
+pageFlowTimeout = null;
+}
+
+function closeAllModals() {
+document.querySelectorAll(".modalOverlay").forEach((modal) => {
+if (!modal.classList.contains("hidden")) {
+modal.classList.add("hidden");
+modal.style.display = "none";
+}
+});
+}
+
+document.addEventListener("keydown", (e) => {
+if (e.key === "Enter") {
+
+const openModal = document.querySelector(".modalOverlay:not(.hidden)");
+
+if (openModal) {
+e.preventDefault();
+closeAllModals();
+}
+
+}
+});
+
+function closeNoticeModal() {
+if (!noticeModal) return;
+noticeModal.classList.add("hidden");
+}
+
+if (noticeModalOk) {
+noticeModalOk.addEventListener("click", closeNoticeModal);
+}
+
+
+
+function showNotice(message) {
+if (!noticeModal || !noticeModalText) return;
+noticeModalText.textContent = message;
+noticeModal.classList.remove("hidden");
+}
+
+function updateLoginButtonState() {
+const loginBtn = document.getElementById("loginBtn");
+if (!loginBtn) return;
+
+if (isUserLoggedIn) {
+loginBtn.dataset.loggedIn = "true";
+} else {
+loginBtn.dataset.loggedIn = "false";
+}
+}
+
+function normalizeProjectContent(container) {
+if (!container) return;
+
+const pages = [...container.querySelectorAll(".editorPageInner, .viewerPageInner, .expose-page, .normalizedExpose")];
+pages.forEach((page) => {
+page.classList.add("normalizedExpose");
+});
+
+const galleries = [...container.querySelectorAll(".expose-gallery")];
+galleries.forEach((gallery) => {
+const imgs = [...gallery.querySelectorAll("img")];
+if (!imgs.length) return;
+
+const mediaWrapper = document.createElement("div");
+mediaWrapper.className = "expose-media";
+
+const hero = imgs[0];
+hero.classList.add("heroImage");
+hero.alt = hero.alt || "Objektbild";
+mediaWrapper.appendChild(hero);
+
+const rest = imgs.slice(1);
+if (rest.length) {
+const row = document.createElement("div");
+row.className = "imageRow";
+rest.forEach((img) => {
+img.alt = img.alt || "Objektbild";
+row.appendChild(img);
+});
+mediaWrapper.appendChild(row);
+}
+
+gallery.replaceWith(mediaWrapper);
+});
+
+}
+
+function placeCaretAtEndOfElement(element) {
+if (!element) return;
+
+const range = document.createRange();
+const selection = window.getSelection();
+
+range.selectNodeContents(element);
+range.collapse(false);
+
+selection.removeAllRanges();
+selection.addRange(range);
+}
+
+function isCaretAtStartOfBlock(block) {
+const selection = window.getSelection();
+if (!selection || selection.rangeCount === 0) return false;
+
+const range = selection.getRangeAt(0);
+if (!range.collapsed) return false;
+
+let node = range.startContainer;
+let offset = range.startOffset;
+
+if (node.nodeType === Node.TEXT_NODE) {
+if (offset !== 0) return false;
+node = node.parentElement;
+}
+
+if (!node || !block.contains(node)) return false;
+
+const testRange = document.createRange();
+testRange.selectNodeContents(block);
+testRange.setEnd(range.startContainer, range.startOffset);
+
+return testRange.toString().length === 0;
+}
+
+function getLastEditableBlock(pageInner) {
+if (!pageInner) return null;
+
+const items = [...pageInner.children].filter((el) => {
+if (el.classList.contains("editorImageWrapper")) return false;
+if (el.classList.contains("editorImagePlaceholder")) return false;
+if (el.tagName === "HR") return false;
+
+const text = (el.textContent || "").trim();
+const isEmptyParagraph = el.tagName === "P" && (el.innerHTML === "<br>" || text === "");
+
+return !isEmptyParagraph;
+});
+
+return items.length ? items[items.length - 1] : null;
+}
+
+function enableTextEditing(container) {
+if (!container) return;
+
+const pageInners = container.querySelectorAll(".editorPageInner");
+
+pageInners.forEach((inner) => {
+inner.setAttribute("contenteditable", "true");
+
+if (!inner.dataset.editorBound) {
+inner.addEventListener("click", () => {
+clearSelectedImage();
+clearSelectedDivider();
+inner.focus();
+});
+
+inner.addEventListener("keydown", (e) => {
+if (e.key === "Tab") {
+e.preventDefault();
+document.execCommand("insertText", false, " ");
+return;
+}
+
+if (e.key === "Backspace") {
+const selection = window.getSelection();
+let node = selection?.anchorNode || null;
+
+if (node && node.nodeType === Node.TEXT_NODE) {
+node = node.parentElement;
+}
+
+const currentBlock = node?.closest("p, h1, h2, h3, li");
+const currentPage = inner.closest(".editorPage");
+const prevPage = currentPage?.previousElementSibling;
+
+if (
+currentBlock &&
+prevPage &&
+prevPage.classList.contains("editorPage") &&
+isCaretAtStartOfBlock(currentBlock)
+) {
+e.preventDefault();
+
+const prevInner = prevPage.querySelector(".editorPageInner");
+const lastBlock = getLastEditableBlock(prevInner);
+
+if (lastBlock) {
+placeCaretAtEndOfElement(lastBlock);
+}
+
+const text = currentBlock.textContent || "";
+currentBlock.remove();
+
+if (text.trim()) {
+const newP = document.createElement("p");
+newP.textContent = text;
+prevInner.appendChild(newP);
+placeCaretAtEndOfElement(newP);
+}
+
+schedulePageFlow(prevPage);
+}
+}
+});
+
+inner.addEventListener("input", () => {
+normalizeEditableStructure(container);
+enforceParagraphStructure(container);
+schedulePageFlow(inner.closest(".editorPage"));
+});
+
+inner.dataset.editorBound = "true";
+}
+});
+
+container.querySelectorAll(".editorImageWrapper").forEach((wrapper) => {
+wrapper.setAttribute("contenteditable", "false");
+});
+
+}
+
+function showSaveToast() {
+const toast = document.getElementById("saveToast");
+if (!toast) return;
+
+toast.classList.add("show");
+
+if (saveToastTimeout) {
+clearTimeout(saveToastTimeout);
+}
+
+saveToastTimeout = setTimeout(() => {
+toast.classList.remove("show");
+}, 1800);
+}
+
+function clearSelectedImage() {
+if (!selectedImage) return;
+selectedImage.classList.remove("editorSelected");
+selectedImage = null;
+}
+
+function clearSelectedDivider() {
+if (!selectedDivider) return;
+selectedDivider.classList.remove("editorDividerSelected");
+selectedDivider = null;
+}
+
+function selectDivider(divider) {
+clearSelectedImage();
+clearSelectedDivider();
+
+selectedDivider = divider;
+selectedDivider.classList.add("editorDividerSelected");
+}
+
+function insertDivider() {
+const selection = window.getSelection();
+const activeEditable = getActiveEditable();
+const pageInner = activeEditable?.closest(".editorPageInner") || document.querySelector(".editorPageInner");
+if (!pageInner) return;
+
+const hr = document.createElement("hr");
+hr.className = "editorDivider";
+hr.tabIndex = 0;
+
+hr.addEventListener("click", (e) => {
+e.stopPropagation();
+selectDivider(hr);
+});
+
+if (selection && selection.rangeCount > 0) {
+const range = selection.getRangeAt(0);
+let node = range.startContainer;
+
+if (node.nodeType === Node.TEXT_NODE) {
+node = node.parentElement;
+}
+
+const insertTarget = node?.closest("p, h1, h2, h3, li, div");
+
+if (insertTarget && pageInner.contains(insertTarget) && insertTarget !== pageInner) {
+insertTarget.insertAdjacentElement("afterend", hr);
+selectDivider(hr);
+return;
+}
+}
+
+pageInner.appendChild(hr);
+selectDivider(hr);
+}
+
+function removeSelectedImage() {
+if (!selectedImage) return;
+
+const placeholder = selectedImage.previousElementSibling;
+selectedImage.remove();
+
+if (placeholder && placeholder.classList.contains("editorImagePlaceholder")) {
+placeholder.remove();
+}
+
+clearSelectedImage();
+updateImageButtons();
+}
+
+function bindImageWrapper(wrapper, img, pageInner, placeholder) {
+if (wrapper.dataset.bound === "true") return;
+
+wrapper.dataset.bound = "true";
+wrapper.contentEditable = "false";
+img.setAttribute("draggable", "false");
+img.contentEditable = "false";
+
+img.style.width = "100%";
+img.style.height = "100%";
+img.style.maxWidth = "none";
+img.style.maxHeight = "none";
+img.style.objectFit = "contain";
+img.style.background = img.alt === "Firmenlogo" ? "white" : "transparent";
+img.style.borderRadius = "0";
+
+const handles = [
+{ cls: "topLeft", dir: "topLeft" },
+{ cls: "topRight", dir: "topRight" },
+{ cls: "bottomLeft", dir: "bottomLeft" },
+{ cls: "bottomRight", dir: "bottomRight" }
+];
+
+handles.forEach((handleData) => {
+const handle = document.createElement("div");
+handle.className = `editorResizeHandle ${handleData.cls}`;
+handle.dataset.direction = handleData.dir;
+wrapper.appendChild(handle);
+
+handle.addEventListener("mousedown", (e) => {
+e.preventDefault();
+e.stopPropagation();
+document.body.style.userSelect = "none";
+
+clearSelectedImage();
+selectedImage = wrapper;
+wrapper.classList.add("editorSelected");
+
+const activePageInner = wrapper.closest(".editorPageInner");
+if (!activePageInner) return;
+
+const startW = wrapper.offsetWidth;
+const startH = wrapper.offsetHeight;
+const startX = e.clientX;
+const startY = e.clientY;
+const startLeftPos = parseFloat(wrapper.style.left) || 0;
+const startTopPos = parseFloat(wrapper.style.top) || 0;
+const direction = handle.dataset.direction;
+
+const onMouseMove = (ev) => {
+let dx = ev.clientX - startX;
+let dy = ev.clientY - startY;
+
+let newW = startW;
+let newH = startH;
+let newLeft = startLeftPos;
+let newTop = startTopPos;
+
+if (direction === "bottomRight") {
+newW = startW + dx;
+newH = startH + dy;
+}
+
+if (direction === "bottomLeft") {
+newW = startW - dx;
+newH = startH + dy;
+newLeft = startLeftPos + dx;
+}
+
+if (direction === "topRight") {
+newW = startW + dx;
+newH = startH - dy;
+newTop = startTopPos + dy;
+}
+
+if (direction === "topLeft") {
+newW = startW - dx;
+newH = startH - dy;
+newLeft = startLeftPos + dx;
+newTop = startTopPos + dy;
+}
+
+if (newW < 80) {
+if (direction === "bottomLeft" || direction === "topLeft") {
+newLeft -= (80 - newW);
+}
+newW = 80;
+}
+
+if (newH < 60) {
+if (direction === "topLeft" || direction === "topRight") {
+newTop -= (60 - newH);
+}
+newH = 60;
+}
+
+if (newLeft < 0) {
+newW += newLeft;
+newLeft = 0;
+}
+
+if (newTop < 0) {
+newH += newTop;
+newTop = 0;
+}
+
+const maxW = activePageInner.clientWidth - newLeft;
+const maxH = activePageInner.clientHeight - newTop;
+
+if (newW > maxW) newW = maxW;
+if (newH > maxH) newH = maxH;
+
+wrapper.style.width = `${newW}px`;
+wrapper.style.height = `${newH}px`;
+wrapper.style.left = `${newLeft}px`;
+wrapper.style.top = `${newTop}px`;
+
+if (placeholder && placeholder.parentElement) {
+placeholder.style.width = `${newW}px`;
+placeholder.style.height = `${newH}px`;
+}
+};
+
+const onMouseUp = () => {
+document.removeEventListener("mousemove", onMouseMove);
+document.removeEventListener("mouseup", onMouseUp);
+document.body.style.userSelect = "";
+schedulePageFlow(wrapper.closest(".editorPage"));
+};
+
+document.addEventListener("mousemove", onMouseMove);
+document.addEventListener("mouseup", onMouseUp);
+});
+});
+
+wrapper.addEventListener("click", (e) => {
+e.preventDefault();
+e.stopPropagation();
+clearSelectedImage();
+clearSelectedDivider();
+selectedImage = wrapper;
+wrapper.classList.add("editorSelected");
+});
+
+wrapper.addEventListener("mousedown", (e) => {
+if (e.target.classList.contains("editorResizeHandle")) return;
+
+e.preventDefault();
+e.stopPropagation();
+document.body.style.userSelect = "none";
+
+clearSelectedImage();
+clearSelectedDivider();
+selectedImage = wrapper;
+wrapper.classList.add("editorSelected");
+
+const activePageInner = wrapper.closest(".editorPageInner");
+if (!activePageInner) return;
+
+const wrapperRect = wrapper.getBoundingClientRect();
+const pageRectNow = activePageInner.getBoundingClientRect();
+
+dragOffsetX = e.clientX - wrapperRect.left;
+dragOffsetY = e.clientY - wrapperRect.top;
+
+const onDragMove = (ev) => {
+const maxX = activePageInner.clientWidth - wrapper.offsetWidth;
+const maxY = activePageInner.clientHeight - wrapper.offsetHeight;
+
+let x = ev.clientX - pageRectNow.left - dragOffsetX + activePageInner.scrollLeft;
+let y = ev.clientY - pageRectNow.top - dragOffsetY + activePageInner.scrollTop;
+
+if (x < 0) x = 0;
+if (y < 0) y = 0;
+if (x > maxX) x = maxX;
+if (y > maxY) y = maxY;
+
+wrapper.style.left = `${x}px`;
+wrapper.style.top = `${y}px`;
+};
+
+const onDragUp = () => {
+document.removeEventListener("mousemove", onDragMove);
+document.removeEventListener("mouseup", onDragUp);
+document.body.style.userSelect = "";
+};
+
+document.addEventListener("mousemove", onDragMove);
+document.addEventListener("mouseup", onDragUp);
+
+});
+}
+
+function enableFreeImageEditor(container) {
+if (!container) return;
+
+const editor = document.getElementById("editorArea");
+if (!editor) return;
+
+const imgs = [...container.querySelectorAll("img")];
+
+imgs.forEach((img) => {
+let wrapper = img.closest(".editorImageWrapper");
+let pageInner = img.closest(".editorPageInner");
+let placeholder = null;
+
+if (wrapper) {
+pageInner = wrapper.closest(".editorPageInner");
+placeholder = wrapper.previousElementSibling;
+
+if (!pageInner) return;
+
+bindImageWrapper(wrapper, img, pageInner, placeholder);
+return;
+}
+
+if (!pageInner) return;
+
+const startWidth = 220;
+const startHeight = 160;
+
+placeholder = document.createElement("div");
+placeholder.className = "editorImagePlaceholder";
+placeholder.style.width = `${startWidth}px`;
+placeholder.style.height = `${startHeight}px`;
+
+img.parentNode.insertBefore(placeholder, img);
+
+const startLeft = 40;
+const startTop = 40 + (pageInner.querySelectorAll(".editorImageWrapper").length * 20);
+
+wrapper = document.createElement("div");
+wrapper.className = "editorImageWrapper";
+wrapper.style.width = `${startWidth}px`;
+wrapper.style.height = `${startHeight}px`;
+wrapper.style.left = `${startLeft}px`;
+wrapper.style.top = `${startTop}px`;
+
+pageInner.appendChild(wrapper);
+wrapper.appendChild(img);
+
+bindImageWrapper(wrapper, img, pageInner, placeholder);
+});
+}
+
+function createNewPageTemplate() {
+return `
+<div class="editorPage">
+<div class="editorPageInner">
+<p><br></p>
+</div>
+</div>
+`;
+}
+
+function getEditorPages() {
+const editor = document.getElementById("editorArea");
+if (!editor) return [];
+return [...editor.querySelectorAll(".editorPage")];
+}
+
+function getEditorImageCount() {
+const editor = document.getElementById("editorArea");
+if (!editor) return 0;
+
+const imgs = [...editor.querySelectorAll(".editorImageWrapper img")];
+
+return imgs.filter((img) => {
+const alt = (img.alt || "").trim().toLowerCase();
+return alt !== "firmenlogo" && alt !== "maklerfoto";
+}).length;
+}
+
+function updateImageButtons() {
+const addImageBtn = document.getElementById("addImageBtn");
+const imageHint = document.getElementById("imageLimitHint");
+
+const count = getEditorImageCount();
+const remaining = Math.max(0, 11 - count);
+
+if (imageHint) {
+imageHint.textContent = `Noch ${remaining} Bilder verfügbar`;
+}
+
+if (addImageBtn) {
+addImageBtn.disabled = remaining <= 0;
+}
+}
+
+function updatePageButtons() {
+const addBtn = document.getElementById("addPageBtn");
+const removeBtn = document.getElementById("removePageBtn");
+const hint = document.getElementById("pageLimitHint");
+
+const pages = getEditorPages();
+const count = pages.length || 1;
+
+if (hint) {
+hint.textContent = `${count} / 5 Seiten`;
+}
+
+if (addBtn) {
+addBtn.disabled = count >= 5;
+}
+
+if (removeBtn) {
+removeBtn.disabled = count <= 1;
+}
+}
+
+function fileToDataUrl(file) {
+return new Promise((resolve, reject) => {
+const reader = new FileReader();
+reader.onload = () => resolve(reader.result);
+reader.onerror = () => reject(new Error("Datei konnte nicht gelesen werden."));
+reader.readAsDataURL(file);
+});
+}
+
+async function handleEditorImageUpload(event) {
+const files = Array.from(event.target.files || []);
+if (!files.length) return;
+
+const editor = document.getElementById("editorArea");
+const pages = getEditorPages();
+const lastPage = pages[pages.length - 1];
+const lastInner = lastPage?.querySelector(".editorPageInner");
+
+if (!editor || !lastInner) return;
+
+const currentCount = getEditorImageCount();
+const remaining = Math.max(0, 11 - currentCount);
+const toAdd = files.slice(0, remaining);
+
+for (const file of toAdd) {
+const src = await fileToDataUrl(file);
+
+const img = document.createElement("img");
+img.src = src;
+img.alt = "Objektbild";
+
+lastInner.appendChild(img);
+}
+
+requestAnimationFrame(() => {
+enableTextEditing(editor);
+enableFreeImageEditor(editor);
+updateImageButtons();
+});
+
+event.target.value = "";
+}
+
+function addNewPage() {
+const editor = document.getElementById("editorArea");
+if (!editor) return;
+
+const pages = getEditorPages();
+if (pages.length >= 5) return;
+
+const pageWrapper = document.createElement("div");
+pageWrapper.innerHTML = createNewPageTemplate();
+
+const newPage = pageWrapper.firstElementChild;
+newPage.dataset.manualPage = "true";
+editor.appendChild(newPage);
+
+enableTextEditing(editor);
+updatePageButtons();
+}
+
+function removeLastPage() {
+const pages = getEditorPages();
+if (pages.length <= 1) return;
+
+pages[pages.length - 1].remove();
+updatePageButtons();
+}
+
+document.addEventListener("focusin", (e) => {
+const el = e.target;
+if (!el.classList.contains("editorPlaceholder")) return;
+
+if (el.dataset.placeholderActive === "true") {
+el.textContent = "";
+el.dataset.placeholderActive = "false";
+el.classList.remove("editorPlaceholder");
+}
+});
+
+document.addEventListener("focusout", (e) => {
+const el = e.target;
+if (!el.dataset.placeholderDefault) return;
+
+if (el.textContent.trim() === "") {
+el.textContent = el.dataset.placeholderDefault;
+el.dataset.placeholderActive = "true";
+el.classList.add("editorPlaceholder");
+}
+});
+
+async function loadProject() {
+resetEditorState();
+
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+const editor = document.getElementById("editorArea");
+
+if (!id) {
+editor.innerHTML = "Keine Projekt-ID gefunden.";
+return;
+}
+
+try {
+const res = await fetch(`/projects/${id}`);
+const data = await res.json();
+
+if (!res.ok) {
+isUserLoggedIn = false;
+updateLoginButtonState();
+editor.innerHTML = data.message || "Projekt konnte nicht geladen werden.";
+return;
+}
+
+currentProject = data;
+isUserLoggedIn = true;
+updateLoginButtonState();
+
+const rawHtml = data.html || "Kein Inhalt vorhanden.";
+
+if (rawHtml.includes("editorPage")) {
+editor.innerHTML = rawHtml;
+} else {
+editor.innerHTML = `
+<div class="editorPage">
+<div class="editorPageInner">
+${rawHtml}
+</div>
+</div>
+`;
+}
+
+normalizeProjectContent(editor);
+normalizeEditableStructure(editor);
+enforceParagraphStructure(editor);
+enableTextEditing(editor);
+enableFreeImageEditor(editor);
+updatePageButtons();
+updateImageButtons();
+clearSelectedImage();
+
+requestAnimationFrame(() => {
+setTimeout(() => {
+schedulePageFlow(document.querySelector(".editorPage"));
+}, 60);
+});
+
+} catch (error) {
+console.error(error);
+isUserLoggedIn = false;
+updateLoginButtonState();
+editor.innerHTML = "Fehler beim Laden des Projekts.";
+}
+}
+
+async function saveProjectChanges() {
+if (!currentProject) {
+showNotice("Kein Projekt geladen.");
+return;
+}
+
+const editor = document.getElementById("editorArea");
+if (!editor) {
+showNotice("Editor nicht gefunden.");
+return;
+}
+
+const clone = editor.cloneNode(true);
+
+clone.querySelectorAll(".editorResizeHandle").forEach(e => e.remove());
+clone.querySelectorAll(".editorImagePlaceholder").forEach(e => e.remove());
+clone.querySelectorAll(".editorSelected").forEach(e => e.classList.remove("editorSelected"));
+
+clone.querySelectorAll(".editorPageInner").forEach((inner) => {
+inner.removeAttribute("data-editor-bound");
+});
+
+clone.querySelectorAll(".editorImageWrapper").forEach(e => {
+e.removeAttribute("data-bound");
+e.setAttribute("contenteditable", "false");
+});
+
+/* Bilder aus editorImageWrapper sauber zurück in den Inhalt setzen */
+
+clone.querySelectorAll('.editorImageWrapper img').forEach((img) => {
+img.style.objectFit = "contain";
+img.style.background = img.alt === "Firmenlogo" ? "white" : "transparent";
+});
+
+const updatedHtml = clone.innerHTML;
+
+const temp = document.createElement("div");
+temp.innerHTML = updatedHtml;
+
+const firstHeading =
+temp.querySelector("h1")?.textContent?.trim() ||
+currentProject.title ||
+"Unbenanntes Exposé";
+
+try {
+const res = await fetch(`/projects/${currentProject.id}`, {
+method: "PUT",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+...currentProject,
+title: firstHeading,
+html: updatedHtml
+})
+});
+
+let data = null;
+try {
+data = await res.json();
+} catch (jsonError) {
+data = null;
+}
+
+if (!res.ok) {
+showNotice(data?.message || "Änderungen konnten nicht gespeichert werden.");
+return;
+}
+
+currentProject = data?.project || {
+...currentProject,
+title: firstHeading,
+html: updatedHtml
+};
+
+showSaveToast();
+} catch (error) {
+console.error(error);
+showNotice("Änderungen konnten nicht gespeichert werden.");
+}
+}
+
+function goNew() {
+window.location.href = "/";
+}
+
+function goDashboard() {
+window.location.href = "/dashboard.html";
+}
+
+function goLogin() {
+const loginBtn = document.getElementById("loginBtn");
+const alreadyLoggedIn =
+isUserLoggedIn || (loginBtn && loginBtn.dataset.loggedIn === "true");
+
+if (alreadyLoggedIn) {
+showNotice("Sie sind bereits angemeldet.");
+return;
+}
+
+window.location.href = "/login.html";
+}
+
+async function logout() {
+isUserLoggedIn = false;
+updateLoginButtonState();
+await fetch("/logout", { method: "POST" });
+window.location.href = "/login.html";
+}
+
+function getActiveEditable() {
+const selection = window.getSelection();
+if (!selection || !selection.anchorNode) return null;
+
+let node = selection.anchorNode;
+if (node.nodeType === Node.TEXT_NODE) {
+node = node.parentElement;
+}
+
+if (!node) return null;
+
+return node.closest(".editorPageInner, [contenteditable='true']");
+}
+
+function format(command) {
+const activeEditable = getActiveEditable();
+if (activeEditable) {
+activeEditable.focus();
+}
+document.execCommand(command, false, null);
+}
+
+function setHeading(tag) {
+const activeEditable = getActiveEditable();
+if (activeEditable) {
+activeEditable.focus();
+}
+document.execCommand("formatBlock", false, `<${tag}>`);
+}
+
+document.querySelectorAll(".editorToolbar button").forEach((button) => {
+button.addEventListener("mousedown", (e) => {
+e.preventDefault();
+});
+
+if (button.dataset.command) {
+button.addEventListener("click", () => {
+format(button.dataset.command);
+});
+}
+
+if (button.dataset.heading) {
+button.addEventListener("click", () => {
+setHeading(button.dataset.heading);
+});
+}
+});
+
+const insertDividerBtn = document.getElementById("insertDividerBtn");
+const decreaseIndentBtn = document.getElementById("decreaseIndentBtn");
+const increaseIndentBtn = document.getElementById("increaseIndentBtn");
+
+
+if (insertDividerBtn) {
+insertDividerBtn.addEventListener("click", () => {
+insertDivider();
+});
+}
+
+if (decreaseIndentBtn) {
+decreaseIndentBtn.addEventListener("click", () => {
+changeIndent("decrease");
+});
+}
+
+if (increaseIndentBtn) {
+increaseIndentBtn.addEventListener("click", () => {
+changeIndent("increase");
+});
+}
+
+
+
+document.getElementById("saveBtn").addEventListener("click", saveProjectChanges);
+document.getElementById("addPageBtn").addEventListener("click", addNewPage);
+document.getElementById("removePageBtn").addEventListener("click", removeLastPage);
+document.getElementById("addImageBtn").addEventListener("click", () => {
+document.getElementById("editorImageUpload").click();
+});
+
+document.getElementById("editorImageUpload").addEventListener("change", handleEditorImageUpload);
+
+document.addEventListener("keydown", (e) => {
+
+if (selectedImage && (e.key === "Delete" || e.key === "Backspace")) {
+e.preventDefault();
+removeSelectedImage();
+return;
+}
+
+if (selectedDivider && (e.key === "Delete" || e.key === "Backspace")) {
+e.preventDefault();
+selectedDivider.remove();
+clearSelectedDivider();
+return;
+}
+
+if (selectedImage && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+e.preventDefault();
+
+const currentPage = selectedImage.closest(".editorPage");
+if (!currentPage) return;
+
+if (e.key === "ArrowUp") {
+const prevPage = currentPage.previousElementSibling;
+
+if (prevPage && prevPage.classList.contains("editorPage")) {
+const prevInner = prevPage.querySelector(".editorPageInner");
+
+if (prevInner) {
+prevInner.appendChild(selectedImage);
+
+selectedImage.style.top = "20px";
+
+const currentLeft = parseFloat(selectedImage.style.left) || 20;
+const maxLeft = Math.max(0, prevInner.clientWidth - selectedImage.offsetWidth);
+selectedImage.style.left = `${Math.min(currentLeft, maxLeft)}px`;
+
+schedulePageFlow(prevPage);
+}
+}
+
+return;
+}
+
+if (e.key === "ArrowDown") {
+let nextPage = currentPage.nextElementSibling;
+
+if (!nextPage || !nextPage.classList.contains("editorPage")) {
+nextPage = getOrCreateNextPage(currentPage);
+}
+
+if (nextPage && nextPage.classList.contains("editorPage")) {
+const nextInner = nextPage.querySelector(".editorPageInner");
+
+if (nextInner) {
+nextInner.appendChild(selectedImage);
+
+selectedImage.style.top = "20px";
+
+const currentLeft = parseFloat(selectedImage.style.left) || 20;
+const maxLeft = Math.max(0, nextInner.clientWidth - selectedImage.offsetWidth);
+selectedImage.style.left = `${Math.min(currentLeft, maxLeft)}px`;
+
+schedulePageFlow(nextPage);
+}
+}
+
+return;
+}
+}
+
+});
+
+function getSelectedBlockElements() {
+const selection = window.getSelection();
+if (!selection || selection.rangeCount === 0) return [];
+
+const range = selection.getRangeAt(0);
+const editor = document.getElementById("editorArea");
+if (!editor) return [];
+
+const blocks = [...editor.querySelectorAll(".editorPageInner p, .editorPageInner h1, .editorPageInner h2, .editorPageInner h3, .editorPageInner li")];
+
+const selectedBlocks = blocks.filter((block) => {
+return range.intersectsNode(block);
+});
+
+if (selectedBlocks.length > 0) {
+return selectedBlocks;
+}
+
+let node = selection.anchorNode;
+if (node && node.nodeType === Node.TEXT_NODE) {
+node = node.parentElement;
+}
+
+const singleBlock = node?.closest("p, h1, h2, h3, li");
+return singleBlock ? [singleBlock] : [];
+}
+
+function changeIndent(direction) {
+const blocks = getSelectedBlockElements();
+if (!blocks.length) return;
+
+const step = 20;
+
+blocks.forEach((block) => {
+const currentMargin = parseInt(block.style.marginLeft || "0", 10) || 0;
+
+let nextMargin = currentMargin;
+
+if (direction === "increase") {
+nextMargin = currentMargin + step;
+}
+
+if (direction === "decrease") {
+nextMargin = Math.max(0, currentMargin - step);
+}
+
+block.style.marginLeft = `${nextMargin}px`;
+});
+
+schedulePageFlow(blocks[0].closest(".editorPage"));
+}
+
+function normalizeEditableStructure(container) {
+if (!container) return;
+
+container.querySelectorAll(".editorPageInner").forEach((pageInner) => {
+const childNodes = [...pageInner.childNodes];
+
+if (!childNodes.length) {
+const p = document.createElement("p");
+p.innerHTML = "<br>";
+pageInner.appendChild(p);
+return;
+}
+
+childNodes.forEach((node) => {
+if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "") {
+const p = document.createElement("p");
+p.textContent = node.textContent;
+pageInner.replaceChild(p, node);
+}
+});
+});
+}
+
+function enforceParagraphStructure(container) {
+if (!container) return;
+
+container.querySelectorAll(".editorPageInner").forEach((pageInner) => {
+[...pageInner.children].forEach((child) => {
+
+if (child.classList.contains("editorImageWrapper")) return;
+if (child.tagName === "HR") return;
+
+if (child.classList.contains("flowImageGrid")) return;
+if (child.classList.contains("flowImageItem")) return;
+if (child.classList.contains("expose-media")) return;
+if (child.classList.contains("imageRow")) return;
+
+if (!["P", "H1", "H2", "H3", "UL", "OL"].includes(child.tagName)) {
+const p = document.createElement("p");
+p.innerHTML = child.innerHTML;
+pageInner.replaceChild(p, child);
+}
+
+});
+});
+}
+
+function getOrCreateNextPage(currentPage) {
+if (!currentPage) return null;
+
+let nextPage = currentPage.nextElementSibling;
+
+if (nextPage && nextPage.classList.contains("editorPage")) {
+return nextPage;
+}
+
+const editor = document.getElementById("editorArea");
+if (!editor) return null;
+
+const pages = getEditorPages();
+if (pages.length >= 5) return null;
+
+const wrapper = document.createElement("div");
+wrapper.innerHTML = createNewPageTemplate();
+
+const newPage = wrapper.firstElementChild;
+newPage.dataset.manualPage = "false";
+currentPage.insertAdjacentElement("afterend", newPage);
+
+enableTextEditing(editor);
+enableFreeImageEditor(editor);
+updatePageButtons();
+
+return newPage;
+}
+
+function pageContentBottom(inner, element) {
+if (!inner || !element) return 0;
+return element.offsetTop + element.offsetHeight;
+}
+
+function splitTextElementToFit(element, currentInner, nextInner, maxHeight) {
+if (!element || !currentInner || !nextInner) return false;
+
+if (!["P", "H1", "H2", "H3", "LI"].includes(element.tagName)) {
+return false;
+}
+
+const originalText = element.textContent || "";
+if (!originalText.trim()) return false;
+
+const words = originalText.split(/\s+/).filter(Boolean);
+if (words.length < 2) return false;
+
+const originalHTML = element.innerHTML;
+const styleMarginLeft = element.style.marginLeft || "";
+const styleTextAlign = element.style.textAlign || "";
+
+let fitWords = [];
+let overflowWords = [];
+
+for (let i = 0; i < words.length; i++) {
+const testWords = words.slice(0, i + 1);
+element.textContent = testWords.join(" ");
+element.style.marginLeft = styleMarginLeft;
+element.style.textAlign = styleTextAlign;
+
+const bottom = pageContentBottom(currentInner, element);
+
+if (bottom <= maxHeight) {
+fitWords = testWords;
+overflowWords = words.slice(i + 1);
+} else {
+break;
+}
+}
+
+if (!fitWords.length || !overflowWords.length) {
+element.innerHTML = originalHTML;
+element.style.marginLeft = styleMarginLeft;
+element.style.textAlign = styleTextAlign;
+return false;
+}
+
+element.textContent = fitWords.join(" ");
+element.style.marginLeft = styleMarginLeft;
+element.style.textAlign = styleTextAlign;
+
+const newEl = document.createElement(element.tagName.toLowerCase());
+newEl.textContent = overflowWords.join(" ");
+newEl.style.marginLeft = styleMarginLeft;
+newEl.style.textAlign = styleTextAlign;
+
+nextInner.insertBefore(newEl, nextInner.firstChild);
+
+return true;
+}
+
+function moveOverflowForwardFrom(startPage) {
+if (!startPage) return;
+
+const maxHeight = 1040;
+let page = startPage;
+let safety = 0;
+
+while (page && page.classList.contains("editorPage")) {
+const inner = page.querySelector(".editorPageInner");
+if (!inner) break;
+
+let pageStillOverflowing = true;
+
+while (pageStillOverflowing && safety < 20) {
+safety++;
+pageStillOverflowing = false;
+
+const items = [...inner.children].filter((el) => {
+if (el.classList.contains("editorImagePlaceholder")) return false;
+if (el.classList.contains("editorImageWrapper")) return false;
+return true;
+});
+
+if (!items.length) break;
+
+for (let i = items.length - 1; i >= 0; i--) {
+const item = items[i];
+const bottom = pageContentBottom(inner, item);
+
+if (bottom > maxHeight) {
+const nextPage = getOrCreateNextPage(page);
+if (!nextPage) return;
+
+const nextInner = nextPage.querySelector(".editorPageInner");
+if (!nextInner) return;
+
+const wasSplit = splitTextElementToFit(item, inner, nextInner, maxHeight);
+
+if (!wasSplit) {
+nextInner.insertBefore(item, nextInner.firstChild);
+}
+
+pageStillOverflowing = true;
+break;
+}
+}
+}
+
+page = page.nextElementSibling;
+}
+}
+
+function cleanupEmptyTrailingPages() {
+const pages = getEditorPages();
+
+for (let i = pages.length - 1; i > 0; i--) {
+const page = pages[i];
+const inner = page.querySelector(".editorPageInner");
+if (!inner) continue;
+
+const meaningfulChildren = [...inner.children].filter((el) => {
+if (el.classList.contains("editorImagePlaceholder")) return false;
+
+if (el.classList.contains("editorImageWrapper")) return true;
+if (el.tagName === "HR") return true;
+
+const text = (el.textContent || "").trim();
+const isPlaceholder = el.classList.contains("editorPlaceholder");
+const isEmptyParagraph = el.tagName === "P" && (el.innerHTML === "<br>" || text === "");
+
+return !isPlaceholder && !isEmptyParagraph && text !== "";
+});
+
+const isManualPage = page.dataset.manualPage === "true";
+
+if (meaningfulChildren.length === 0 && !isManualPage) {
+page.remove();
+} else {
+break;
+}
+}
+
+updatePageButtons();
+}
+
+function schedulePageFlow(fromPage = null) {
+if (pageFlowTimeout) {
+clearTimeout(pageFlowTimeout);
+}
+
+pageFlowTimeout = setTimeout(() => {
+const pages = getEditorPages();
+const firstPage = pages.length ? pages[0] : null;
+
+if (!firstPage) return;
+
+moveOverflowForwardFrom(firstPage);
+cleanupEmptyTrailingPages();
+
+const editor = document.getElementById("editorArea");
+enableTextEditing(editor);
+enableFreeImageEditor(editor);
+}, 80);
+}
+
+async function checkAuthStatus() {
+try {
+const res = await fetch("/auth/status");
+const data = await res.json();
+
+isUserLoggedIn = data.loggedIn;
+updateLoginButtonState();
+} catch (err) {
+console.error("Auth check failed", err);
+isUserLoggedIn = false;
+updateLoginButtonState();
+}
+}
+
+
+(async () => {
+    await checkAuthStatus();
+    loadProject();
+})();
+
+document.addEventListener("click", (e) => {
+const clickedWrapper = e.target.closest(".editorImageWrapper");
+const clickedDivider = e.target.closest(".editorDivider");
+
+if (!clickedWrapper && !clickedDivider) {
+clearSelectedImage();
+clearSelectedDivider();
+}
+});
+
+setTimeout(() => {
+updatePageButtons();
+updateImageButtons();
+}, 50);
+</script>
+
+</body>
+</html>

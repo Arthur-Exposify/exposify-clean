@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Meine Projekte – Exposify</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="layout">
+
+<div class="sidebar">
+<div>
+<div class="logoWrap">
+<img src="/assets/logo.svg" alt="Exposify Logo">
+</div>
+
+<div class="sidebarTop">
+<button type="button" onclick="goNew()">Neues Projekt</button>
+<button type="button" onclick="goDashboard()">Meine Projekte</button>
+</div>
+</div>
+
+<div class="sidebarBottom">
+<button type="button" onclick="goLogin()">Anmelden</button>
+<button type="button" onclick="logout()">Logout</button>
+
+<div class="sidebarBottomLinks">
+<a href="/impressum.html">Impressum</a>
+<a href="/datenschutz.html">Datenschutz</a>
+</div>
+
+</div>
+</div>
+
+<div class="content">
+
+<div class="pageTitleRow">
+<h1>Meine Projekte</h1>
+</div>
+
+<div id="projectsList"></div>
+
+</div>
+
+</div>
+
+<div id="deleteModal" class="modalOverlay hidden">
+<div class="modalBox">
+<p>Möchtest du dieses Exposé wirklich löschen?</p>
+<div class="projectActions">
+<button type="button" onclick="confirmDeleteProject()">Weiter</button>
+<button type="button" onclick="closeDeleteModal()">Abbrechen</button>
+</div>
+</div>
+</div>
+
+<script>
+let deleteProjectId = null;
+
+async function loadProjects() {
+const container = document.getElementById("projectsList");
+container.innerHTML = "<div class='card'>Projekte werden geladen...</div>";
+
+try {
+const res = await fetch("/projects");
+const data = await res.json();
+
+if (!res.ok) {
+container.innerHTML = `<div class="card">${data.message || "Bitte zuerst anmelden."}</div>`;
+return;
+}
+
+if (!data.length) {
+container.innerHTML = "<div class='card'>Noch keine Projekte vorhanden.</div>";
+return;
+}
+
+container.innerHTML = "";
+
+data.forEach((project) => {
+const card = document.createElement("div");
+card.className = "projectCard";
+
+card.innerHTML = `
+<h3>${project.title || "Unbenanntes Exposé"}</h3>
+<p>Erstellt: ${new Date(project.createdAt).toLocaleString("de-DE")}</p>
+<div class="projectActions">
+<button type="button" onclick="viewProject('${project.id}')">Ansehen</button>
+<button type="button" onclick="editProject('${project.id}')">Bearbeiten</button>
+<button type="button" onclick="openDeleteModal('${project.id}')">Löschen</button>
+</div>
+`;
+
+container.appendChild(card);
+});
+} catch (error) {
+console.error(error);
+container.innerHTML = "<div class='card'>Fehler beim Laden der Projekte.</div>";
+}
+}
+
+function viewProject(id) {
+window.location.href = `/viewer.html?id=${id}`;
+}
+
+function editProject(id) {
+window.location.href = `/editor.html?id=${id}`;
+}
+
+function openDeleteModal(id) {
+deleteProjectId = id;
+document.getElementById("deleteModal").classList.remove("hidden");
+}
+
+function closeDeleteModal() {
+deleteProjectId = null;
+document.getElementById("deleteModal").classList.add("hidden");
+}
+
+async function confirmDeleteProject() {
+if (!deleteProjectId) return;
+
+try {
+await fetch(`/projects/${deleteProjectId}`, {
+method: "DELETE"
+});
+
+closeDeleteModal();
+loadProjects();
+} catch (error) {
+console.error(error);
+alert("Löschen fehlgeschlagen.");
+}
+}
+
+function goNew() {
+window.location.href = "/";
+}
+
+function goDashboard() {
+window.location.href = "/dashboard.html";
+}
+
+function goLogin() {
+window.location.href = "/login.html";
+}
+
+async function logout() {
+await fetch("/logout", { method: "POST" });
+window.location.href = "/login.html";
+}
+
+loadProjects();
+</script>
+
+</body>
+</html>

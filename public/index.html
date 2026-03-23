@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Exposify</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="layout">
+
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<img src="/assets/logo.svg" alt="Exposify Logo">
+</div>
+
+<div class="sidebarTop">
+<button type="button" onclick="newProject()">Neues Projekt</button>
+<button type="button" onclick="loadProjects()">Meine Projekte</button>
+</div>
+</div>
+
+<div class="sidebarBottom">
+<button type="button" onclick="goLogin()">Anmelden</button>
+<button type="button" onclick="logout()">Logout</button>
+
+<div class="sidebarBottomLinks">
+<a href="/impressum.html">Impressum</a>
+<a href="/datenschutz.html">Datenschutz</a>
+</div>
+
+</div>
+</aside>
+
+<main class="content">
+
+<div class="pageTitleRow">
+<h1>Real Estate Creator</h1>
+</div>
+
+<div class="sectionHeading">
+<h3>Objektdaten</h3>
+</div>
+
+<div class="grid2">
+<div class="colStack">
+<input id="ort" placeholder="Ort">
+<input id="zimmer" placeholder="Zimmer">
+<input id="heizung" placeholder="Heizungsart">
+<input id="park" placeholder="Parkmöglichkeiten">
+<input id="stellplaetze" placeholder="Stellplätze">
+<input id="objektart" placeholder="Objektart">
+<input id="nutzungsart" placeholder="Nutzungsart">
+<textarea id="merkmale" placeholder="Besondere Merkmale"></textarea>
+</div>
+
+<div class="colStack">
+<input id="wohnflaeche" placeholder="Wohnfläche">
+<input id="grundstueck" placeholder="Grundstücksgröße">
+<input id="baujahr" placeholder="Baujahr">
+<input id="schlafzimmer" placeholder="Anzahl Schlafzimmer">
+<input id="badezimmer" placeholder="Anzahl Badezimmer">
+<input id="objekttyp" placeholder="Objekttyp">
+<select id="vermarktung">
+<option value="Kaufen">Kaufen</option>
+<option value="Mieten">Mieten</option>
+</select>
+<input id="preis" placeholder="Kaufpreis">
+</div>
+</div>
+
+<div class="bottomArea">
+<div class="bigBox">
+<h3>Titelbild</h3>
+<div class="uploadFancy" onclick="document.getElementById('titleImage').click()">
+<span>Titelbild hochladen</span>
+<small>Optional 1 Bild</small>
+<input type="file" id="titleImage" accept="image/*" hidden>
+<div id="titlePreview" class="previewInside"></div>
+</div>
+</div>
+
+<div class="bigBox">
+<h3>Weitere Bilder</h3>
+<div class="uploadFancy" onclick="document.getElementById('images').click()">
+<span>Bilder hochladen</span>
+<small>Bis zu 10 Bilder</small>
+<input type="file" id="images" multiple hidden>
+<div id="previewImages" class="previewInside"></div>
+</div>
+</div>
+</div>
+
+<div class="sectionHeading">
+<h3>Maklerdaten</h3>
+</div>
+
+<div class="grid2">
+<div class="colStack">
+<input id="maklerName" placeholder="Name">
+<input id="maklerTelefon" placeholder="Telefon">
+</div>
+
+<div class="colStack">
+<input id="maklerFirma" placeholder="Firma">
+<input id="maklerMail" placeholder="E-Mail">
+</div>
+</div>
+
+<div class="bottomArea">
+<div class="bigBox">
+<h3>Firmenlogo</h3>
+<div class="uploadFancy" onclick="document.getElementById('logoUpload').click()">
+<span>Logo hochladen</span>
+<small>1 Bild</small>
+<input type="file" id="logoUpload" accept="image/*" hidden>
+<div id="logoPreview" class="previewInside"></div>
+</div>
+</div>
+
+<div class="bigBox">
+<h3>Maklerfoto</h3>
+<div class="uploadFancy" onclick="document.getElementById('fotoUpload').click()">
+<span>Foto hochladen</span>
+<small>1 Bild</small>
+<input type="file" id="fotoUpload" accept="image/*" hidden>
+<div id="fotoPreview" class="previewInside"></div>
+</div>
+</div>
+</div>
+
+<div class="toolbar">
+<button id="generateBtn" type="button" onclick="generateExpose()" disabled>Exposé erstellen</button>
+</div>
+
+<p id="generateHint" class="generateHint">Bitte mindestens 3 Angaben ausfüllen.</p>
+
+<div id="exposeEditor" class="hidden"></div>
+
+</main>
+</div>
+
+<div id="loadingOverlay" class="loadingOverlay hidden" style="display: none;">
+<div class="loadingBox">
+<div class="spinner"></div>
+<p>Exposé wird erstellt...</p>
+</div>
+</div>
+
+<div id="authModal" class="modalOverlay hidden">
+<div class="modalBox">
+<p>Sie müssen angemeldet sein, um Exposés erstellen und bearbeiten zu können.</p>
+<button type="button" id="authModalOk">OK</button>
+</div>
+</div>
+
+<script src="/script.js"></script>
+
+</body>
+</html>

@@ -369,16 +369,27 @@ headless: "new"
 const page = await browser.newPage();
 await page.setViewport({ width: 1280, height: 1800 });
 
+const fs = require("fs");
+const path = require("path");
+
+const css = fs.readFileSync(
+path.join(__dirname, "public", "style.css"),
+"utf8"
+);
+
 await page.setContent(`
 <html>
 <head>
-<link rel="stylesheet" href="https://exposify-clean.onrender.com/style.css">
+<style>
+${css}
+</style>
 </head>
 <body>
 ${html}
 </body>
 </html>
 `, { waitUntil: "networkidle0" });
+
 
 await page.emulateMediaType("screen");
 

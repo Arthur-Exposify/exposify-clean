@@ -361,6 +361,10 @@ app.post("/pdf", requireAuth, async (req, res) => {
 try {
 const html = req.body.html;
 
+console.log("HTML START");
+console.log(html);
+console.log("HTML END");
+
 if (!html) {
 return res.status(400).json({ success: false, message: "Kein HTML erhalten." });
 }

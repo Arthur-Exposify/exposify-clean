@@ -173,16 +173,6 @@ const html = `
 <title>Exposé PDF</title>
 
 <style>
-${[...document.styleSheets]
-.map(sheet => {
-try {
-return [...sheet.cssRules].map(rule => rule.cssText).join("");
-} catch {
-return "";
-}
-})
-.join("")}
-
 @page {
 margin: 0;
 }

@@ -378,23 +378,7 @@ headless: "new"
 const page = await browser.newPage();
 await page.setViewport({ width: 1280, height: 1800 });
 
-await page.setContent(
-`
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<style>
-${css}
-</style>
-</head>
-<body>
-${html}
-</body>
-</html>
-`,
-{ waitUntil: "networkidle0" }
-);
+await page.setContent(html, { waitUntil: "networkidle0" });
 
 await page.emulateMediaType("screen");
 

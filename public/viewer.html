@@ -173,58 +173,66 @@ const html = `
 <title>Exposé PDF</title>
 
 <style>
-${[...document.styleSheets]
-.map(sheet => {
-try {
-return [...sheet.cssRules].map(rule => rule.cssText).join("");
-} catch {
-return "";
-}
-})
-.join("")}
-
 @page {
 margin: 0;
 }
 
 html, body {
-margin: 0 !important;
-padding: 0 !important;
-background: white !important;
+margin: 0;
+padding: 0;
+background: white;
+font-family: Arial, sans-serif;
+color: #111;
 }
 
 #viewerContent {
-margin: 0 !important;
-padding: 0 !important;
-width: 210mm !important;
+width: 210mm;
+margin: 0;
+padding: 0;
 }
 
 .viewerPage {
-width: 210mm !important;
-height: 297mm !important;
-margin: 0 !important;
-page-break-after: always !important;
-break-after: page !important;
-overflow: hidden !important;
-box-sizing: border-box !important;
-}
-
-.viewerPage:last-child {
-page-break-after: auto !important;
-break-after: auto !important;
+width: 210mm;
+height: 297mm;
+page-break-after: always;
+overflow: hidden;
 }
 
 .viewerPageInner {
-width: 100% !important;
-height: 100% !important;
-margin: 0 !important;
-box-sizing: border-box !important;
-overflow: hidden !important;
+width: 100%;
+height: 100%;
+padding: 40px 48px;
+box-sizing: border-box;
+}
+
+/* TEXT FIX */
+p {
+margin: 0 0 14px;
+line-height: 1.45;
 }
 
 h1 {
-font-weight: 900 !important;
-letter-spacing: -0.3px;
+font-size: 34px;
+font-weight: 900;
+margin: 0 0 16px;
+line-height: 1.2;
+}
+
+h2 {
+font-size: 22px;
+font-weight: 700;
+margin: 18px 0 10px;
+}
+
+/* BILDER FIX */
+img {
+max-width: 100%;
+display: block;
+}
+
+/* GANZ WICHTIG: killt Editor Chaos */
+.editorImageWrapper {
+position: static !important;
 }
 </style>
 

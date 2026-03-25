@@ -1351,7 +1351,3 @@ min-height: 100vh;
 .authCard {
 margin: auto;
 }
-
-.viewerPageInner p + .maklerFirma {
-margin-top: -10px !important;
-}

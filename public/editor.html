@@ -879,18 +879,6 @@ updateLoginButtonState();
 
 const rawHtml = data.html || "Kein Inhalt vorhanden.";
 
-let cleanedHtml = rawHtml
-.replace(/<p><strong><br><\/strong><\/p>/g, "")
-.replace(/margin-left:\s*140px;/g, "")
-
-container.innerHTML = `
-<div class="viewerPage">
-<div class="viewerPageInner">
-${cleanedHtml}
-</div>
-</div>
-`;
-
 if (rawHtml.includes("editorPage")) {
 editor.innerHTML = rawHtml;
 } else {

@@ -352,12 +352,12 @@ const pageThreeImages = allImageDataUrls.slice(0, 6);
 const pageFourImages = allImageDataUrls.slice(6, 12);
 
 const maklerTextHtml =
-data.firma || data.maklerName || data.telefon || data.email
+(data.firma || data.maklerName || data.telefon || data.email)
 ? `
-${data.firma ? `<p><strong>${data.firma}</strong></p>` : ""}
-${data.maklerName ? `<p>${data.maklerName}</p>` : ""}
-${data.telefon ? `<p>${data.telefon}</p>` : ""}
-${data.email ? `<p>${data.email}</p>` : ""}
+${data.firma ? `<p class="maklerFirma" style="margin-left: 140px;">${data.firma}</p>` : ""}
+${data.maklerName ? `<p class="maklerText" style="margin-left: 140px;">${data.maklerName}</p>` : ""}
+${data.telefon ? `<p class="maklerText" style="margin-left: 140px;">${data.telefon}</p>` : ""}
+${data.email ? `<p class="maklerText" style="margin-left: 140px;">${data.email}</p>` : ""}
 `
 : "";
 

@@ -1352,15 +1352,6 @@ min-height: 100vh;
 margin: auto;
 }
 
-.maklerFirma {
-font-weight: 700;
-margin-top: 0 !important;
-margin-bottom: 6px !important;
-line-height: 1.35 !important;
-}
-
-.maklerText {
-margin-top: 0 !important;
-margin-bottom: 4px !important;
-line-height: 1.35 !important;
+.viewerPageInner p + .maklerFirma {
+margin-top: -8px !important;
 }

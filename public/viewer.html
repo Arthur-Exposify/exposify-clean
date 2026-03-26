@@ -203,6 +203,32 @@ page-break-after: always;
 break-after: auto;
 page-break-after: auto;
 }
+
+/* 🔥 FIX: Absolute Position im PDF deaktivieren */
+.editorImageWrapper {
+position: relative !important;
+display: block !important;
+width: 100% !important;
+margin: 20px 0 !important;
+}
+
+/* Bilder normal anzeigen */
+.editorImageWrapper img {
+width: 100% !important;
+height: auto !important;
+object-fit: contain !important;
+}
+
+/* Grid wieder aktivieren */
+.flowImageGrid {
+display: grid !important;
+grid-template-columns: 1fr 1fr !important;
+gap: 16px !important;
+}
+
+.flowImageItem {
+width: 100%;
+}
 </style>
 </head>
 <body>

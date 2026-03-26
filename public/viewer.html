@@ -173,7 +173,37 @@ unit: "px",
 format: [794, 1123]
 });
 
-pdf.addImage(imgData, "JPEG", 0, 0, 794, 1123);
+const pdf = new jspdf.jsPDF("p", "mm", "a4");
+const pdfWidth = pdf.internal.pageSize.getWidth();
+const pdfHeight = pdf.internal.pageSize.getHeight();
+
+for (let i = 0; i < pageNodes.length; i++) {
+const canvas = await html2canvas(pageNodes[i], {
+scale: 2,
+useCORS: true,
+backgroundColor: "#ffffff"
+});
+
+const imgData = canvas.toDataURL("image/png");
+const imgWidth = canvas.width;
+const imgHeight = canvas.height;
+
+const ratio = imgHeight / imgWidth;
+
+let renderWidth = pdfWidth;
+let renderHeight = renderWidth * ratio;
+
+if (renderHeight > pdfHeight) {
+renderHeight = pdfHeight;
+renderWidth = renderHeight / ratio;
+}
+
+const x = (pdfWidth - renderWidth) / 2;
+const y = 0;
+
+if (i > 0) pdf.addPage();
+pdf.addImage(imgData, "PNG", x, y, renderWidth, renderHeight);
+}
 
 pdf.save("expose.pdf");
 

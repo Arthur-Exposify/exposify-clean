@@ -492,6 +492,7 @@ if (!activePageInner) return;
 
 const startW = wrapper.offsetWidth;
 const startH = wrapper.offsetHeight;
+const ratio = startW / startH;
 const startX = e.clientX;
 const startY = e.clientY;
 const startLeftPos = parseFloat(wrapper.style.left) || 0;
@@ -509,26 +510,26 @@ let newTop = startTopPos;
 
 if (direction === "bottomRight") {
 newW = startW + dx;
-newH = startH + dy;
+newH = newW / ratio;
 }
 
 if (direction === "bottomLeft") {
 newW = startW - dx;
-newH = startH + dy;
+newH = newW / ratio;
 newLeft = startLeftPos + dx;
 }
 
 if (direction === "topRight") {
 newW = startW + dx;
-newH = startH - dy;
-newTop = startTopPos + dy;
+newH = newW / ratio;
+newTop = startTopPos + (startH - newH);
 }
 
 if (direction === "topLeft") {
-newW = startW - dx;
-newH = startH - dy;
-newLeft = startLeftPos + dx;
-newTop = startTopPos + dy;
+    newW = startW - dx;
+    newH = newW / ratio;
+    newLeft = startLeftPos + dx;
+    newTop
 }
 
 if (newW < 80) {

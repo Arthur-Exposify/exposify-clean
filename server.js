@@ -1,3 +1,14 @@
+import "dotenv/config";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+process.env.SUPABASE_URL,
+process.env.SUPABASE_ANON_KEY
+);
+
+console.log("SUPABASE URL:", process.env.SUPABASE_URL);
+console.log("SUPABASE KEY da:", !!process.env.SUPABASE_ANON_KEY);
+
 import express from "express";
 import fs from "fs";
 import path from "path";
@@ -195,45 +206,64 @@ user: req.session.user || null
 });
 });
 
-app.get("/projects", requireAuth, (req, res) => {
-const items = readJSON(exposesFile);
-const filtered = items.filter((p) => p.userId === req.session.user.id);
-res.json(filtered);
+app.get("/projects", requireAuth, async (req, res) => {
+const { data, error } = await supabase
+.from("exposes")
+.select("*")
+.eq("user_id", req.session.user.id)
+.order("created_at", { ascending: false });
+
+if (error) {
+console.error(error);
+return res.status(500).json({ success: false });
+}
+
+res.json(data);
 });
 
-app.get("/projects/:id", requireAuth, (req, res) => {
-const items = readJSON(exposesFile);
-const project = items.find(
-(p) => p.id === req.params.id && p.userId === req.session.user.id
-);
+app.get("/projects/:id", requireAuth, async (req, res) => {
+const { data, error } = await supabase
+.from("exposes")
+.select("*")
+.eq("id", req.params.id)
+.eq("user_id", req.session.user.id)
+.single();
 
-if (!project) {
+if (error || !data) {
 return res.status(404).json({ success: false, message: "Projekt nicht gefunden." });
 }
 
-res.json(project);
+res.json(data);
 });
 
-app.post("/projects", requireAuth, (req, res) => {
-const items = readJSON(exposesFile);
-
+app.post("/projects", requireAuth, async (req, res) => {
 const project = {
-id: Date.now().toString(),
-userId: req.session.user.id,
-createdAt: new Date().toISOString(),
-updatedAt: new Date().toISOString(),
-...req.body
+user_id: req.session.user.id,
+html: JSON.stringify(req.body),
 };
 
-items.unshift(project);
-writeJSON(exposesFile, items);
+const { data, error } = await supabase
+.from("exposes")
+.insert([project])
+.select()
+.single();
+
+if (error) {
+console.error(error);
+return res.status(500).json({ success: false });
+}
 
 res.json({
 success: true,
-id: project.id,
-project
+id: data.id,
+project: data
 });
 });
+
+
+const items = readJSON(exposesFile);
+
+
 
 app.put("/projects/:id", requireAuth, (req, res) => {
 const items = readJSON(exposesFile);

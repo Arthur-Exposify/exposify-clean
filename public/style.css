@@ -890,19 +890,12 @@ background: transparent;
 }
 
 .viewerPage .editorImageWrapper img {
-width: auto !important;
-height: auto !important;
-max-width: 100% !important;
-max-height: 100% !important;
-object-fit: contain !important;
-object-position: center center !important;
+width: 100% !important;
+height: 100% !important;
+object-fit: fill !important; /* 🔥 KEY CHANGE */
 display: block !important;
 border-radius: 0 !important;
-background: white;
-position: absolute !important;
-top: 50% !important;
-left: 50% !important;
-transform: translate(-50%, -50%) !important;
+background: transparent !important;
 }
 
 .viewerPage .editorImageWrapper {

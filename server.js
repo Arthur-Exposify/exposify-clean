@@ -3,8 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
 process.env.SUPABASE_URL,
-process.env.SUPABASE_ANON_KEY
+process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
 
 console.log("SUPABASE URL:", process.env.SUPABASE_URL);
 console.log("SUPABASE KEY da:", !!process.env.SUPABASE_ANON_KEY);
@@ -207,6 +208,7 @@ user: req.session.user || null
 });
 
 app.get("/projects", requireAuth, async (req, res) => {
+try {
 const { data, error } = await supabase
 .from("exposes")
 .select("*")
@@ -214,14 +216,35 @@ const { data, error } = await supabase
 .order("created_at", { ascending: false });
 
 if (error) {
-console.error(error);
-return res.status(500).json({ success: false });
+console.error("Supabase GET /projects error:", error);
+return res.status(500).json({
+success: false,
+message: "Projekte konnten nicht geladen werden."
+});
 }
 
-res.json(data);
+const projects = (data || []).map((item) => ({
+id: item.id,
+userId: item.user_id,
+createdAt: item.created_at,
+updatedAt: item.updated_at,
+title: item.title,
+html: item.html,
+data: item.data || {}
+}));
+
+res.json(projects);
+} catch (error) {
+console.error("GET /projects crash:", error);
+res.status(500).json({
+success: false,
+message: "Projekte konnten nicht geladen werden."
+});
+}
 });
 
 app.get("/projects/:id", requireAuth, async (req, res) => {
+try {
 const { data, error } = await supabase
 .from("exposes")
 .select("*")
@@ -230,34 +253,75 @@ const { data, error } = await supabase
 .single();
 
 if (error || !data) {
-return res.status(404).json({ success: false, message: "Projekt nicht gefunden." });
+console.error("Supabase GET /projects/:id error:", error);
+return res.status(404).json({
+success: false,
+message: "Projekt nicht gefunden."
+});
 }
 
-res.json(data);
+res.json({
+id: data.id,
+userId: data.user_id,
+createdAt: data.created_at,
+updatedAt: data.updated_at,
+title: data.title,
+html: data.html,
+data: data.data || {}
+});
+} catch (error) {
+console.error("GET /projects/:id crash:", error);
+res.status(500).json({
+success: false,
+message: "Projekt konnte nicht geladen werden."
+});
+}
 });
 
 app.post("/projects", requireAuth, async (req, res) => {
-const project = {
+try {
+const payload = {
 user_id: req.session.user.id,
-html: JSON.stringify(req.body),
+title: req.body.title || "Immobilien-Exposé",
+html: req.body.html || "",
+data: req.body.data || {},
+updated_at: new Date().toISOString()
 };
 
 const { data, error } = await supabase
 .from("exposes")
-.insert([project])
+.insert([payload])
 .select()
 .single();
 
-if (error) {
-console.error(error);
-return res.status(500).json({ success: false });
+if (error || !data) {
+console.error("Supabase POST /projects error:", error);
+return res.status(500).json({
+success: false,
+message: "Projekt konnte nicht gespeichert werden."
+});
 }
 
 res.json({
 success: true,
 id: data.id,
-project: data
+project: {
+id: data.id,
+userId: data.user_id,
+createdAt: data.created_at,
+updatedAt: data.updated_at,
+title: data.title,
+html: data.html,
+data: data.data || {}
+}
 });
+} catch (error) {
+console.error("POST /projects crash:", error);
+res.status(500).json({
+success: false,
+message: "Projekt konnte nicht gespeichert werden."
+});
+}
 });
 
 
